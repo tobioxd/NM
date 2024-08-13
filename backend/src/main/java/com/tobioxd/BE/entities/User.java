@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 
 @Entity
-@Table(name = "booking_users")
+@Table(name = "be_users")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -47,6 +47,15 @@ public class User implements UserDetails {
 
     @Column(name = "is_active")
     private boolean isActive;
+
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
+    @Column(name = "password_reset_expiration_date")
+    private Date passwordResetExpirationDate;
+
+    @Column(name = "password_change_at")
+    private Date passwordChangeAt;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

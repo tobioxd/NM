@@ -29,6 +29,9 @@ public class UserResponse {
     @JsonProperty("created_at")
     private Date createdAt;
 
+    @JsonProperty("password_change_at")
+    private Date passwordChangeAt;
+
     @JsonProperty("is_active")
     private boolean active;
 
@@ -39,6 +42,7 @@ public class UserResponse {
                 .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
                 .createdAt(user.getCreatedAt())
+                .passwordChangeAt(user.getPasswordChangeAt())
                 .active(user.isActive())
                 .build();
     }

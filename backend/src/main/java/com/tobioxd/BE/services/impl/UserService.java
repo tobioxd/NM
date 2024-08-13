@@ -1,8 +1,10 @@
 package com.tobioxd.BE.services.impl;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +21,7 @@ import org.springframework.validation.FieldError;
 
 import com.tobioxd.BE.config.security.JwtTokenUtil;
 import com.tobioxd.BE.payload.dtos.RefreshTokenDTO;
+import com.tobioxd.BE.payload.dtos.ResetPasswordDTO;
 import com.tobioxd.BE.payload.dtos.UpdatePasswordDTO;
 import com.tobioxd.BE.payload.dtos.UserDTO;
 import com.tobioxd.BE.payload.dtos.UserLoginDTO;
@@ -28,12 +31,15 @@ import com.tobioxd.BE.exceptions.DataExistAlreadyException;
 import com.tobioxd.BE.exceptions.DataNotFoundException;
 import com.tobioxd.BE.repositories.TokenRepository;
 import com.tobioxd.BE.repositories.UserRepository;
+import com.tobioxd.BE.payload.responses.ForgotPasswordResponse;
 import com.tobioxd.BE.payload.responses.LoginResponse;
 import com.tobioxd.BE.payload.responses.RegisterResponse;
+import com.tobioxd.BE.payload.responses.UpdatePasswordResponse;
 import com.tobioxd.BE.payload.responses.UserListResponse;
 import com.tobioxd.BE.payload.responses.UserResponse;
 import com.tobioxd.BE.services.base.IUserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -176,9 +182,8 @@ public class UserService implements IUserService {
         userRepository.save(existingUser);
     }
 
-
     @Override
-    public User updatePassword(UpdatePasswordDTO updatePasswordDTO, String token) throws Exception {
+    public UserResponse updatePassword(UpdatePasswordDTO updatePasswordDTO, String token) throws Exception {
         String extractedToken = token.substring(7); // Clear "Bearer" from token
         User user = getUserDetailsFromToken(extractedToken);
 
@@ -189,8 +194,9 @@ public class UserService implements IUserService {
         String password = updatePasswordDTO.getNewPassword();
         String encodedPassword = passwordEncoder.encode(password);
         user.setPassword(encodedPassword);
+        user.setPasswordChangeAt(new Date());
 
-        return userRepository.save(user);
+        return UserResponse.fromUser(userRepository.save(user));
 
     }
 
@@ -237,10 +243,10 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public RegisterResponse updateMe(String token, UpdatePasswordDTO updatePasswordDTO, BindingResult result)
+    public UpdatePasswordResponse updateMe(String token, UpdatePasswordDTO updatePasswordDTO, BindingResult result)
             throws Exception {
 
-        RegisterResponse registerResponse = new RegisterResponse();
+        UpdatePasswordResponse updatePasswordResponse = new UpdatePasswordResponse();
 
         if (result.hasErrors()) {
             List<String> errorMessages = result.getFieldErrors()
@@ -251,17 +257,17 @@ public class UserService implements IUserService {
             throw new Exception(errorMessages.toString());
         }
 
-        User user = updatePassword(updatePasswordDTO, token);
-        registerResponse.setMessage("Update successfully !");
-        registerResponse.setUser(user);
+        UserResponse user = updatePassword(updatePasswordDTO, token);
+        updatePasswordResponse.setMessage("Update successfully !");
+        updatePasswordResponse.setUserResponse(user);
 
-        return registerResponse;
+        return updatePasswordResponse;
 
     }
 
     @Override
     public RegisterResponse createReceptionist(UserDTO userDTO, BindingResult result) throws Exception {
-        
+
         RegisterResponse registerResponse = new RegisterResponse();
 
         if (result.hasErrors()) {
@@ -300,6 +306,84 @@ public class UserService implements IUserService {
         registerResponse.setMessage("Create receptionist account successfully !");
         registerResponse.setUser(user);
         return registerResponse;
+
+    }
+
+    @Override
+    public ForgotPasswordResponse forgotPassword(HttpServletRequest request, String phoneNumber) throws Exception {
+        
+        String clientIP = request.getServerName();
+
+        ForgotPasswordResponse forgotPasswordResponse = new ForgotPasswordResponse();
+        Optional<User> user = userRepository.findByPhoneNumber(phoneNumber);
+        if (user.isEmpty()) {
+            throw new DataNotFoundException("Phone number not found !");
+        }
+
+        User existingUser = user.get();
+        String token = generateToken();
+        existingUser.setPasswordResetToken(token);
+        existingUser.setPasswordResetExpirationDate(java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)));
+        userRepository.save(existingUser);
+
+        forgotPasswordResponse.setMessage("Password have sent to your device, You have 5 minute to take new password !");
+        forgotPasswordResponse.setLink("http://" + clientIP + "/api/v1/users/reset-password/" + token);
+        return forgotPasswordResponse;
+
+    }
+
+    @Override
+    public UpdatePasswordResponse resetPassword(String token, ResetPasswordDTO resetPasswordDTO, BindingResult result)
+            throws Exception {
+        
+        UpdatePasswordResponse updatePasswordResponse = new UpdatePasswordResponse();
+
+        if (result.hasErrors()) {
+            List<String> errorMessages = result.getFieldErrors()
+                    .stream()
+                    .map(FieldError::getDefaultMessage)
+                    .toList();
+
+            throw new Exception(errorMessages.toString());
+        }
+
+        Optional<User> user = userRepository.findByPasswordResetToken(token);
+        System.out.println(user);
+
+        if (user.isEmpty()) {
+            throw new DataNotFoundException("Link is invalid !");
+        }
+
+        User existingUser = user.get();
+
+        if (isTokenExpired(existingUser.getPasswordResetExpirationDate())) {
+            throw new Exception("Link is expired !");
+        }
+
+        String password = resetPasswordDTO.getNewPassword();
+        String encodedPassword = passwordEncoder.encode(password);
+        existingUser.setPassword(encodedPassword);
+        existingUser.setPasswordResetToken(null);
+        existingUser.setPasswordResetExpirationDate(null);
+        userRepository.save(existingUser);
+
+        updatePasswordResponse.setMessage("Update password successfully, please log in again !");
+
+        return updatePasswordResponse;
+
+    }
+
+    private String generateToken() {
+        StringBuilder token = new StringBuilder();
+
+        return token.append(UUID.randomUUID().toString())
+                .append(UUID.randomUUID().toString()).toString();
+    }
+
+    private boolean isTokenExpired(Date passwordResetExpirationDate) {
+
+        Date now = new Date();
+        return now.after(passwordResetExpirationDate);
 
     }
 

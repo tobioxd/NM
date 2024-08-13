@@ -17,6 +17,8 @@ public interface UserRepository extends JpaRepository<User,String>{
 
     Optional<User> findByPhoneNumber(String phoneNunber);
 
+    Optional<User> findByPasswordResetToken(String token);
+
     @Query("SELECT o FROM User o WHERE (:keyword IS NULL OR :keyword = '' OR "+
             "LOWER(o.name) LIKE LOWER(CONCAT('%',:keyword,'%')) OR "+
             "LOWER(o.phoneNumber) LIKE LOWER(CONCAT('%',:keyword,'%'))) AND (LOWER(o.role) = 'user' OR LOWER(o.role) = 'receptionist')")

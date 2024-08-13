@@ -12,6 +12,9 @@ CREATE TABLE be_users (
     role NVARCHAR2 (255),
     created_at DATE,
     is_active NUMBER (1) DEFAULT 1,
+    password_reset_token NVARCHAR2(255),
+    password_reset_expiration_date DATE,
+    password_change_at DATE,
     CONSTRAINT chk_be_users_role CHECK (
         role IN (
             'admin',

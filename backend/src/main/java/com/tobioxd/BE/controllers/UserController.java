@@ -1,6 +1,7 @@
 package com.tobioxd.BE.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -11,6 +12,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import com.tobioxd.BE.payload.dtos.RefreshTokenDTO;
+import com.tobioxd.BE.payload.dtos.ResetPasswordDTO;
 import com.tobioxd.BE.payload.dtos.UpdatePasswordDTO;
 import com.tobioxd.BE.payload.dtos.UserDTO;
 import com.tobioxd.BE.payload.dtos.UserLoginDTO;
@@ -19,6 +21,7 @@ import com.tobioxd.BE.exceptions.DataNotFoundException;
 import com.tobioxd.BE.exceptions.ExpiredTokenException;
 import com.tobioxd.BE.payload.responses.LoginResponse;
 import com.tobioxd.BE.payload.responses.RegisterResponse;
+import com.tobioxd.BE.payload.responses.UpdatePasswordResponse;
 import com.tobioxd.BE.payload.responses.UserListResponse;
 import com.tobioxd.BE.services.impl.UserService;
 
@@ -27,7 +30,7 @@ import com.tobioxd.BE.services.impl.UserService;
 @RequiredArgsConstructor
 
 public class UserController {
-    
+
     private final UserService userService;
 
     @PostMapping("/register")
@@ -77,7 +80,7 @@ public class UserController {
 
     @PutMapping("/updateMe")
     @Operation(summary = "Update user information")
-    public ResponseEntity<RegisterResponse> updateMe(
+    public ResponseEntity<UpdatePasswordResponse> updateMe(
             @RequestHeader("Authorization") String token,
             @Valid @RequestBody UpdatePasswordDTO updatePasswordDTO,
             BindingResult result) {
@@ -85,9 +88,9 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.ACCEPTED)
                     .body(userService.updateMe(token, updatePasswordDTO, result));
         } catch (Exception e) {
-            RegisterResponse registerResponse = new RegisterResponse();
-            registerResponse.setMessage(e.getMessage());
-            return ResponseEntity.badRequest().body(registerResponse);
+            UpdatePasswordResponse updatePasswordResponse = new UpdatePasswordResponse();
+            updatePasswordResponse.setMessage(e.getMessage());
+            return ResponseEntity.badRequest().body(updatePasswordResponse);
         }
     }
 
@@ -133,6 +136,33 @@ public class UserController {
         } catch (Exception e) {
             registerResponse.setMessage(e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(registerResponse);
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot password")
+    public ResponseEntity<?> forgotPassword(HttpServletRequest request,
+            @RequestParam String phoneNumber) {
+        try {
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(userService.forgotPassword(request,phoneNumber));
+        } catch (DataNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/reset-password/{token}")
+    @Operation(summary = "Reset password")
+    public ResponseEntity<?> resetPassword(@PathVariable String token,
+            @Valid @RequestBody ResetPasswordDTO resetPasswordDTO,
+            BindingResult result) {
+        try {
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(userService.resetPassword(token, resetPasswordDTO, result));
+        } catch (DataNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
