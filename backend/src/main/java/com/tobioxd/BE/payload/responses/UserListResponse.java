@@ -14,7 +14,7 @@ import java.util.List;
 
 public class UserListResponse {
 
-    private List<UserListResponse> users;
+    private List<UserResponse> users;
 
     private int totalPages;
     
