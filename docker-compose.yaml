@@ -1,9 +1,17 @@
 services:
+
+  nm_frontend:
+    image: nm_frontend:latest
+    ports:
+      - 80:80
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     
   nm_backend:
     image: nm_backend:latest
     ports:
-      - 80:80
+      - 8080:8080
     build:
       context: ./backend
       dockerfile: Dockerfile

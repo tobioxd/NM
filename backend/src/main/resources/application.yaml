@@ -1,8 +1,8 @@
 server:
-    port : 80
+    port : 8080
   
 client:
-    port : 5173
+    port : 80
 
 spring:
   application:
@@ -22,8 +22,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: Ur email
-    password: Ur password
+    username: ur email
+    password: ur password
     properties:
       mail:
         smtp:
