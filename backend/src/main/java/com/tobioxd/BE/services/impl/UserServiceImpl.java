@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import com.tobioxd.BE.config.security.JwtTokenUtil;
+import com.tobioxd.BE.payload.dtos.ForgotPasswordDTO;
 import com.tobioxd.BE.payload.dtos.RefreshTokenDTO;
 import com.tobioxd.BE.payload.dtos.ResetPasswordDTO;
 import com.tobioxd.BE.payload.dtos.UpdatePasswordDTO;
@@ -32,6 +34,7 @@ import com.tobioxd.BE.entities.Token;
 import com.tobioxd.BE.entities.User;
 import com.tobioxd.BE.exceptions.DataExistAlreadyException;
 import com.tobioxd.BE.exceptions.DataNotFoundException;
+import com.tobioxd.BE.exceptions.ExpiredTokenException;
 import com.tobioxd.BE.repositories.TokenRepository;
 import com.tobioxd.BE.repositories.UserRepository;
 import com.tobioxd.BE.payload.responses.ForgotPasswordResponse;
@@ -56,6 +59,9 @@ public class UserServiceImpl implements IUserService {
     private final AuthenticationManager authenticationManager;
     private final TokenServiceImpl tokenServiceImpl;
     private final JavaMailSender javaMailSender;
+
+    @Value("${client.port}")
+    private String port;
 
     @Override
     @Transactional
@@ -83,7 +89,7 @@ public class UserServiceImpl implements IUserService {
         }
         // Check if email form is wrong
         if (!userDTO.getEmail().matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
-            throw new IllegalArgumentException("Invalid email format. Please provide a valid email.");
+            throw new Exception("Invalid email format. Please provide a valid email.");
         }
         // Check if email exists already
         if (userRepository.existsByEmail(userDTO.getEmail())) {
@@ -136,6 +142,10 @@ public class UserServiceImpl implements IUserService {
             user = userRepository.findByEmail(email);
         }
 
+        if (user.isEmpty()) {
+            throw new DataNotFoundException("User not found !");
+        }
+
         List<Token> tokens = tokenServiceImpl.findByUser(user.get());
 
         if (tokens.size() >= 3) {
@@ -146,10 +156,10 @@ public class UserServiceImpl implements IUserService {
         User existinguser = user.get();
 
         if (!passwordEncoder.matches(password, existinguser.getPassword())) {
-            throw new DataNotFoundException("Invalid phonenuber/password !");
+            throw new DataNotFoundException("Invalid phonenumber/password !");
         }
 
-        User existingUser = user.orElseThrow(() -> new DataNotFoundException("Invalid phonenuber/password !"));
+        User existingUser = user.orElseThrow(() -> new DataNotFoundException("Invalid phonenumber/password !"));
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 existingUser.getPhoneNumber(),
                 password, existingUser.getAuthorities());
@@ -165,7 +175,7 @@ public class UserServiceImpl implements IUserService {
                 .token(jwtToken.getToken())
                 .tokenType(jwtToken.getTokenType())
                 .refreshToken(jwtToken.getRefreshToken())
-                .username(userDetail.getUsername())
+                .user(UserResponse.fromUser(userDetail))
                 .roles(userDetail.getAuthorities().stream().map(item -> item.getAuthority()).toList())
                 .id(userDetail.getId())
                 .build();
@@ -183,12 +193,12 @@ public class UserServiceImpl implements IUserService {
         if (user.isPresent()) {
 
             if (user.get().isActive() == false) {
-                throw new Exception("User is blocked !");
+                throw new ExpiredTokenException("User is blocked !");
             }
 
             return user.get();
         } else {
-            throw new Exception("User not found");
+            throw new DataNotFoundException("User not found");
         }
     }
 
@@ -256,7 +266,7 @@ public class UserServiceImpl implements IUserService {
                 .token(jwtToken.getToken())
                 .tokenType(jwtToken.getTokenType())
                 .refreshToken(jwtToken.getRefreshToken())
-                .username(userDetail.getUsername())
+                .user(UserResponse.fromUser(userDetail))
                 .roles(userDetail.getAuthorities().stream().map(item -> item.getAuthority()).toList())
                 .id(userDetail.getId())
                 .build();
@@ -363,7 +373,7 @@ public class UserServiceImpl implements IUserService {
             msg.setTo(user.getEmail());
 
             msg.setSubject("Reset Password");
-            msg.setText("Hello " + user.getName() + "\n\n" 
+            msg.setText("Hello " + user.getName() + "\n\n"
                     + "You have 5 minute to take new password !" + "\n\n"
                     + "Please click on this link to Reset your Password : " + content + ". \n\n"
                     + "Regards \n" + "tobioxd");
@@ -376,20 +386,31 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public ForgotPasswordResponse forgotPassword(HttpServletRequest request, String input) throws Exception {
+    public ForgotPasswordResponse forgotPassword(HttpServletRequest request, ForgotPasswordDTO forgotPasswordDTO,
+            BindingResult result) throws Exception {
+
+        if (result.hasErrors()) {
+            List<String> errorMessages = result.getFieldErrors()
+                    .stream()
+                    .map(FieldError::getDefaultMessage)
+                    .toList();
+
+            throw new Exception(errorMessages.toString());
+        }
+
+        String input = forgotPasswordDTO.getInput();
 
         String clientIP = request.getServerName();
-        String port = String.valueOf(request.getServerPort());
 
         ForgotPasswordResponse forgotPasswordResponse = new ForgotPasswordResponse();
-        
+
         String phoneNumber;
         String email;
 
         if (input.matches("\\d+")) {
             phoneNumber = input;
             email = null;
-        } else if (input.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
+        } else if (input.matches("[^@ \\t\\r\\n]+@[^@ \\t\\r\\n]+\\.[^@ \\t\\r\\n]+")) {
             phoneNumber = null;
             email = input;
         } else {
@@ -410,11 +431,11 @@ public class UserServiceImpl implements IUserService {
         existingUser.setPasswordResetExpirationDate(java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)));
         userRepository.save(existingUser);
 
-        String link = "http://" + clientIP + ":" + port + "/api/v1/users/reset-password/" + token;
+        String link = "http://" + clientIP + ":" + port + "/reset-password/" + token;
 
         sendEmail(existingUser, link);
-        forgotPasswordResponse
-                .setMessage("Password have sent to your device, You have 5 minute to take new password !");
+        forgotPasswordResponse.setStatus("success");
+        forgotPasswordResponse.setMessage("Password have sent to your device, You have 5 minute to take new password !");
         forgotPasswordResponse.setLink(link);
 
         return forgotPasswordResponse;
@@ -437,7 +458,6 @@ public class UserServiceImpl implements IUserService {
         }
 
         Optional<User> user = userRepository.findByPasswordResetToken(token);
-        System.out.println(user);
 
         if (user.isEmpty()) {
             throw new DataNotFoundException("Link is invalid !");

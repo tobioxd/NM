@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import com.tobioxd.BE.payload.dtos.ForgotPasswordDTO;
 import com.tobioxd.BE.payload.dtos.RefreshTokenDTO;
 import com.tobioxd.BE.payload.dtos.ResetPasswordDTO;
 import com.tobioxd.BE.payload.dtos.UpdatePasswordDTO;
@@ -22,6 +23,7 @@ import com.tobioxd.BE.exceptions.DataNotFoundException;
 import com.tobioxd.BE.exceptions.ExpiredTokenException;
 import com.tobioxd.BE.payload.responses.LoginResponse;
 import com.tobioxd.BE.payload.responses.RegisterResponse;
+import com.tobioxd.BE.payload.responses.ResetPasswordResponse;
 import com.tobioxd.BE.payload.responses.UpdatePasswordResponse;
 import com.tobioxd.BE.payload.responses.UserListResponse;
 import com.tobioxd.BE.services.impl.UserServiceImpl;
@@ -57,7 +59,9 @@ public class UserController {
             @Valid @RequestBody UserLoginDTO userLoginDTO) {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(UserServiceImpl.loginUser(userLoginDTO));
-        } catch (DataNotFoundException e) {
+        }catch (ExpiredTokenException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(LoginResponse.builder().message(e.getMessage()).build());
+        }catch (DataNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(LoginResponse.builder().message(e.getMessage()).build());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(LoginResponse.builder().message(e.getMessage()).build());
@@ -156,9 +160,9 @@ public class UserController {
     @PostMapping("/forgot-password")
     @Operation(summary = "Forgot password")
     public ResponseEntity<?> forgotPassword(HttpServletRequest request,
-            @RequestParam String input) {
+            @RequestBody ForgotPasswordDTO forgotPasswordDTO, BindingResult result) {
         try {
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.forgotPassword(request,input));
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.forgotPassword(request,forgotPasswordDTO, result));
         } catch (DataNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
@@ -171,12 +175,15 @@ public class UserController {
     public ResponseEntity<?> resetPassword(@PathVariable String token,
             @Valid @RequestBody ResetPasswordDTO resetPasswordDTO,
             BindingResult result) {
+            ResetPasswordResponse resetPasswordResponse = new ResetPasswordResponse();
         try {
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.resetPassword(token, resetPasswordDTO, result));
         } catch (DataNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            resetPasswordResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(resetPasswordResponse);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            resetPasswordResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resetPasswordResponse);
         }
     }
 

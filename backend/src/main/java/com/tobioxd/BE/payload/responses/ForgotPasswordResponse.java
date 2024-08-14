@@ -12,6 +12,9 @@ import lombok.*;
 
 public class ForgotPasswordResponse {
 
+    @JsonProperty("status")
+    private String status;
+
     @JsonProperty("message")
     private String message;
 

@@ -1,6 +1,7 @@
 package com.tobioxd.BE.payload.responses;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.*;
 
 import java.util.List;
@@ -26,7 +27,7 @@ public class LoginResponse {
 
     private String id;
 
-    private String username;
+    private UserResponse user;
 
     private List<String> roles;
 }

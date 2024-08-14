@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.validation.BindingResult;
 
+import com.tobioxd.BE.payload.dtos.ForgotPasswordDTO;
 import com.tobioxd.BE.payload.dtos.RefreshTokenDTO;
 import com.tobioxd.BE.payload.dtos.ResetPasswordDTO;
 import com.tobioxd.BE.payload.dtos.UpdatePasswordDTO;
@@ -50,7 +51,7 @@ public interface IUserService {
 
     void sendEmail(User user, String content) throws Exception;
 
-    ForgotPasswordResponse forgotPassword(HttpServletRequest request, String phoneNumber) throws Exception;
+    ForgotPasswordResponse forgotPassword(HttpServletRequest request, ForgotPasswordDTO forgotPasswordDTO, BindingResult result) throws Exception;
 
     UpdatePasswordResponse resetPassword(String token, ResetPasswordDTO resetPasswordDTO, BindingResult result) throws Exception;
 
