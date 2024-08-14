@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class TokenService implements ITokenService {
+public class TokenServiceImpl implements ITokenService {
 
     @Value("${jwt.expiration}")
     private int expiration; // save to an environment variable

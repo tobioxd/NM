@@ -7,6 +7,7 @@ import org.springframework.validation.BindingResult;
 import com.tobioxd.BE.payload.dtos.RefreshTokenDTO;
 import com.tobioxd.BE.payload.dtos.ResetPasswordDTO;
 import com.tobioxd.BE.payload.dtos.UpdatePasswordDTO;
+import com.tobioxd.BE.payload.dtos.UpdateUserInfoDTO;
 import com.tobioxd.BE.payload.dtos.UserDTO;
 import com.tobioxd.BE.payload.dtos.UserLoginDTO;
 import com.tobioxd.BE.entities.User;
@@ -33,6 +34,8 @@ public interface IUserService {
 
     UserResponse updatePassword(UpdatePasswordDTO updatePasswordDTO, String token) throws Exception;
 
+    UserResponse updateUserInfor(UpdateUserInfoDTO updateUserInfoDTO, String token) throws Exception;
+
     Page<User> findAll(String keyword, Pageable pageable) throws Exception;
 
     public void blockOrEnable(String userId, boolean active) throws Exception;
@@ -44,6 +47,8 @@ public interface IUserService {
     UpdatePasswordResponse updateMe(String token, UpdatePasswordDTO updatePasswordDTO, BindingResult result) throws Exception;
 
     RegisterResponse createReceptionist(UserDTO userDTO, BindingResult result) throws Exception;
+
+    void sendEmail(User user, String content) throws Exception;
 
     ForgotPasswordResponse forgotPassword(HttpServletRequest request, String phoneNumber) throws Exception;
 

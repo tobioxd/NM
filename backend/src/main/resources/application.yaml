@@ -16,6 +16,20 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.OracleDialect
         format_sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: Ur email
+    password: Ur password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          timeout: 5000
+          connectiontimeout: 5000
+          writetimeout: 5000
+          starttls:
+            enable: true
 
 api:
     prefix: api/v1

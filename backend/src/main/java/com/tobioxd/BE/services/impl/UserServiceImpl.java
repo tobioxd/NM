@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,11 +19,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.mail.javamail.JavaMailSender;
 
 import com.tobioxd.BE.config.security.JwtTokenUtil;
 import com.tobioxd.BE.payload.dtos.RefreshTokenDTO;
 import com.tobioxd.BE.payload.dtos.ResetPasswordDTO;
 import com.tobioxd.BE.payload.dtos.UpdatePasswordDTO;
+import com.tobioxd.BE.payload.dtos.UpdateUserInfoDTO;
 import com.tobioxd.BE.payload.dtos.UserDTO;
 import com.tobioxd.BE.payload.dtos.UserLoginDTO;
 import com.tobioxd.BE.entities.Token;
@@ -44,14 +47,15 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements IUserService {
+public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
     private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
-    private final TokenService tokenService;
+    private final TokenServiceImpl tokenServiceImpl;
+    private final JavaMailSender javaMailSender;
 
     @Override
     @Transactional
@@ -77,9 +81,18 @@ public class UserService implements IUserService {
         if (userRepository.existsByPhoneNumber(phoneNumber)) {
             throw new DataExistAlreadyException("Phone number exists already !");
         }
+        // Check if email form is wrong
+        if (!userDTO.getEmail().matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
+            throw new IllegalArgumentException("Invalid email format. Please provide a valid email.");
+        }
+        // Check if email exists already
+        if (userRepository.existsByEmail(userDTO.getEmail())) {
+            throw new DataExistAlreadyException("Email exists already !");
+        }
         // convert from userDTO => user
         User newUser = User.builder()
                 .phoneNumber(userDTO.getPhoneNumber())
+                .email(userDTO.getEmail())
                 .password(userDTO.getPassword())
                 .name(userDTO.getName())
                 .isActive(true)
@@ -99,19 +112,35 @@ public class UserService implements IUserService {
 
     @Override
     public LoginResponse loginUser(UserLoginDTO userLoginDTO) throws Exception {
-        String phoneNumber = userLoginDTO.getPhoneNumber();
+        String input = userLoginDTO.getInput();
         String password = userLoginDTO.getPassword();
 
-        Optional<User> user = userRepository.findByPhoneNumber(phoneNumber);
-        if (user.isEmpty()) {
-            throw new DataNotFoundException("Invalid phonenuber/password !");
+        String phoneNumber;
+        String email;
+
+        if (input.matches("\\d+")) {
+            phoneNumber = input;
+            email = null;
+        } else if (input.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
+            phoneNumber = null;
+            email = input;
+        } else {
+            throw new IllegalArgumentException("Invalid input format. Please provide a valid phone number or email.");
         }
 
-        List<Token> tokens = tokenService.findByUser(user.get());
+        Optional<User> user = Optional.empty();
+
+        if (phoneNumber != null) {
+            user = userRepository.findByPhoneNumber(phoneNumber);
+        } else if (email != null) {
+            user = userRepository.findByEmail(email);
+        }
+
+        List<Token> tokens = tokenServiceImpl.findByUser(user.get());
 
         if (tokens.size() >= 3) {
             tokens.sort((t1, t2) -> t2.getExpirationDate().compareTo(t1.getExpirationDate()));
-            tokenService.deleteToken(tokens.get(0));
+            tokenServiceImpl.deleteToken(tokens.get(0));
         }
 
         User existinguser = user.get();
@@ -121,14 +150,15 @@ public class UserService implements IUserService {
         }
 
         User existingUser = user.orElseThrow(() -> new DataNotFoundException("Invalid phonenuber/password !"));
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(phoneNumber,
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                existingUser.getPhoneNumber(),
                 password, existingUser.getAuthorities());
 
         authenticationManager.authenticate(authenticationToken);
         String token = jwtTokenUtil.generateToken(existinguser);
 
         User userDetail = getUserDetailsFromToken(token);
-        Token jwtToken = tokenService.addToken(userDetail, token);
+        Token jwtToken = tokenServiceImpl.addToken(userDetail, token);
 
         return LoginResponse.builder()
                 .message("Login successfully !")
@@ -201,10 +231,25 @@ public class UserService implements IUserService {
     }
 
     @Override
+    public UserResponse updateUserInfor(UpdateUserInfoDTO updateUserInfoDTO, String token) throws Exception {
+        String extractedToken = token.substring(7); // Clear "Bearer" from token
+        User user = getUserDetailsFromToken(extractedToken);
+
+        if (updateUserInfoDTO.getName() != null) {
+            user.setName(updateUserInfoDTO.getName());
+        }
+        if (updateUserInfoDTO.getEmail() != null) {
+            user.setEmail(updateUserInfoDTO.getEmail());
+        }
+
+        return UserResponse.fromUser(userRepository.save(user));
+    }
+
+    @Override
     public LoginResponse refreshToken(RefreshTokenDTO refreshTokenDTO) throws Exception {
 
         User userDetail = getUserDetailsFromRefreshToken(refreshTokenDTO.getRefreshToken());
-        Token jwtToken = tokenService.refreshToken(refreshTokenDTO.getRefreshToken(), userDetail);
+        Token jwtToken = tokenServiceImpl.refreshToken(refreshTokenDTO.getRefreshToken(), userDetail);
 
         return LoginResponse.builder()
                 .message("Refresh token successfully")
@@ -310,24 +355,68 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public ForgotPasswordResponse forgotPassword(HttpServletRequest request, String phoneNumber) throws Exception {
-        
+    public void sendEmail(User user, String content) throws Exception {
+        try {
+
+            SimpleMailMessage msg = new SimpleMailMessage();
+            msg.setFrom("minhnhat.kd.hungyen@gmail.com");// input the senders email ID
+            msg.setTo(user.getEmail());
+
+            msg.setSubject("Reset Password");
+            msg.setText("Hello " + user.getName() + "\n\n" 
+                    + "You have 5 minute to take new password !" + "\n\n"
+                    + "Please click on this link to Reset your Password : " + content + ". \n\n"
+                    + "Regards \n" + "tobioxd");
+
+            javaMailSender.send(msg);
+
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @Override
+    public ForgotPasswordResponse forgotPassword(HttpServletRequest request, String input) throws Exception {
+
         String clientIP = request.getServerName();
+        String port = String.valueOf(request.getServerPort());
 
         ForgotPasswordResponse forgotPasswordResponse = new ForgotPasswordResponse();
-        Optional<User> user = userRepository.findByPhoneNumber(phoneNumber);
-        if (user.isEmpty()) {
-            throw new DataNotFoundException("Phone number not found !");
+        
+        String phoneNumber;
+        String email;
+
+        if (input.matches("\\d+")) {
+            phoneNumber = input;
+            email = null;
+        } else if (input.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
+            phoneNumber = null;
+            email = input;
+        } else {
+            throw new IllegalArgumentException("Invalid input format. Please provide a valid phone number or email.");
         }
 
-        User existingUser = user.get();
+        Optional<User> user = Optional.empty();
+
+        if (phoneNumber != null) {
+            user = userRepository.findByPhoneNumber(phoneNumber);
+        } else if (email != null) {
+            user = userRepository.findByEmail(email);
+        }
+
+        User existingUser = user.orElseThrow(() -> new DataNotFoundException("User not found !"));
         String token = generateToken();
         existingUser.setPasswordResetToken(token);
         existingUser.setPasswordResetExpirationDate(java.sql.Timestamp.valueOf(LocalDateTime.now().plusMinutes(5)));
         userRepository.save(existingUser);
 
-        forgotPasswordResponse.setMessage("Password have sent to your device, You have 5 minute to take new password !");
-        forgotPasswordResponse.setLink("http://" + clientIP + "/api/v1/users/reset-password/" + token);
+        String link = "http://" + clientIP + ":" + port + "/api/v1/users/reset-password/" + token;
+
+        sendEmail(existingUser, link);
+        forgotPasswordResponse
+                .setMessage("Password have sent to your device, You have 5 minute to take new password !");
+        forgotPasswordResponse.setLink(link);
+
         return forgotPasswordResponse;
 
     }
@@ -335,7 +424,7 @@ public class UserService implements IUserService {
     @Override
     public UpdatePasswordResponse resetPassword(String token, ResetPasswordDTO resetPasswordDTO, BindingResult result)
             throws Exception {
-        
+
         UpdatePasswordResponse updatePasswordResponse = new UpdatePasswordResponse();
 
         if (result.hasErrors()) {

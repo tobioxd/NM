@@ -17,6 +17,10 @@ public class UserDTO {
     @NotBlank(message = "Phone number is required")
     private String phoneNumber;
 
+    @JsonProperty("email")
+    @NotBlank(message = "Email is required")
+    private String email;
+
     @JsonProperty("password")
     @NotBlank(message = "Password is required")
     private String password;

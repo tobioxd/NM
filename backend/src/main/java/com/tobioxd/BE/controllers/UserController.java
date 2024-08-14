@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import com.tobioxd.BE.payload.dtos.RefreshTokenDTO;
 import com.tobioxd.BE.payload.dtos.ResetPasswordDTO;
 import com.tobioxd.BE.payload.dtos.UpdatePasswordDTO;
+import com.tobioxd.BE.payload.dtos.UpdateUserInfoDTO;
 import com.tobioxd.BE.payload.dtos.UserDTO;
 import com.tobioxd.BE.payload.dtos.UserLoginDTO;
 import com.tobioxd.BE.exceptions.DataExistAlreadyException;
@@ -23,7 +24,7 @@ import com.tobioxd.BE.payload.responses.LoginResponse;
 import com.tobioxd.BE.payload.responses.RegisterResponse;
 import com.tobioxd.BE.payload.responses.UpdatePasswordResponse;
 import com.tobioxd.BE.payload.responses.UserListResponse;
-import com.tobioxd.BE.services.impl.UserService;
+import com.tobioxd.BE.services.impl.UserServiceImpl;
 
 @RestController
 @RequestMapping("${api.prefix}/users")
@@ -31,7 +32,7 @@ import com.tobioxd.BE.services.impl.UserService;
 
 public class UserController {
 
-    private final UserService userService;
+    private final UserServiceImpl UserServiceImpl;
 
     @PostMapping("/register")
     @Operation(summary = "Register account")
@@ -40,7 +41,7 @@ public class UserController {
             BindingResult result) {
         RegisterResponse registerResponse = new RegisterResponse();
         try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(userDTO, result));
+            return ResponseEntity.status(HttpStatus.CREATED).body(UserServiceImpl.createUser(userDTO, result));
         } catch (DataExistAlreadyException e) {
             registerResponse.setMessage(e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(registerResponse);
@@ -55,7 +56,7 @@ public class UserController {
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody UserLoginDTO userLoginDTO) {
         try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(userService.loginUser(userLoginDTO));
+            return ResponseEntity.status(HttpStatus.CREATED).body(UserServiceImpl.loginUser(userLoginDTO));
         } catch (DataNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(LoginResponse.builder().message(e.getMessage()).build());
         } catch (Exception e) {
@@ -68,7 +69,7 @@ public class UserController {
     public ResponseEntity<LoginResponse> refreshToken(
             @Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
         try {
-            return ResponseEntity.ok(userService.refreshToken(refreshTokenDTO));
+            return ResponseEntity.ok(UserServiceImpl.refreshToken(refreshTokenDTO));
         } catch (DataNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(LoginResponse.builder().message(e.getMessage()).build());
         } catch (ExpiredTokenException e) {
@@ -78,7 +79,7 @@ public class UserController {
         }
     }
 
-    @PutMapping("/updateMe")
+    @PatchMapping("/updatePasword")
     @Operation(summary = "Update user information")
     public ResponseEntity<UpdatePasswordResponse> updateMe(
             @RequestHeader("Authorization") String token,
@@ -86,11 +87,24 @@ public class UserController {
             BindingResult result) {
         try {
             return ResponseEntity.status(HttpStatus.ACCEPTED)
-                    .body(userService.updateMe(token, updatePasswordDTO, result));
+                    .body(UserServiceImpl.updateMe(token, updatePasswordDTO, result));
         } catch (Exception e) {
             UpdatePasswordResponse updatePasswordResponse = new UpdatePasswordResponse();
             updatePasswordResponse.setMessage(e.getMessage());
             return ResponseEntity.badRequest().body(updatePasswordResponse);
+        }
+    }
+
+    @PatchMapping("/updateMe")
+    @Operation(summary = "Update user information")
+    public ResponseEntity<?> updateMe(
+            @RequestHeader("Authorization") String token,
+            @Valid @RequestBody UpdateUserInfoDTO userDTO,
+            BindingResult result) {
+        try {
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.updateUserInfor(userDTO, token));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
@@ -102,20 +116,20 @@ public class UserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit) {
         try {
-            return ResponseEntity.status(HttpStatus.OK).body(userService.getAllUser(keyword, page, limit));
+            return ResponseEntity.status(HttpStatus.OK).body(UserServiceImpl.getAllUser(keyword, page, limit));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
         }
     }
 
-    @PutMapping("/blockOrEnable/{userId}/{active}")
+    @PatchMapping("/blockOrEnable/{userId}/{active}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Block or enable user")
     public ResponseEntity<?> blockOrEnable(
             @PathVariable String userId,
             @PathVariable boolean active) {
         try {
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(userService.blockOrEnableUser(userId, active));
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.blockOrEnableUser(userId, active));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -129,7 +143,7 @@ public class UserController {
             BindingResult result) {
         RegisterResponse registerResponse = new RegisterResponse();
         try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(userService.createReceptionist(userDTO, result));
+            return ResponseEntity.status(HttpStatus.CREATED).body(UserServiceImpl.createReceptionist(userDTO, result));
         } catch (DataExistAlreadyException e) {
             registerResponse.setMessage(e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(registerResponse);
@@ -142,9 +156,9 @@ public class UserController {
     @PostMapping("/forgot-password")
     @Operation(summary = "Forgot password")
     public ResponseEntity<?> forgotPassword(HttpServletRequest request,
-            @RequestParam String phoneNumber) {
+            @RequestParam String input) {
         try {
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(userService.forgotPassword(request,phoneNumber));
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.forgotPassword(request,input));
         } catch (DataNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
@@ -158,7 +172,7 @@ public class UserController {
             @Valid @RequestBody ResetPasswordDTO resetPasswordDTO,
             BindingResult result) {
         try {
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(userService.resetPassword(token, resetPasswordDTO, result));
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.resetPassword(token, resetPasswordDTO, result));
         } catch (DataNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
