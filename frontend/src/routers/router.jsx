@@ -6,6 +6,7 @@ import LogIn from "../components/home/LogIn";
 import LogOut from "../components/home/LogOut";
 import ForgotPassword from "../components/home/ForgotPassword";
 import ResetPassword from "../components/home/ResetPassword";
+import EditInfo from "../components/updateinfor/EditInfo";
 
 const router = createBrowserRouter([
   {
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
       {
         path: "reset-password/:token",
         element: <ResetPassword />,
+      },
+      {
+        path: "edit-info",
+        element: <EditInfo />,
       },
     ],
   },

@@ -83,7 +83,7 @@ public class UserController {
         }
     }
 
-    @PatchMapping("/updatePasword")
+    @PatchMapping("/updatePassword")
     @Operation(summary = "Update user information")
     public ResponseEntity<UpdatePasswordResponse> updateMe(
             @RequestHeader("Authorization") String token,

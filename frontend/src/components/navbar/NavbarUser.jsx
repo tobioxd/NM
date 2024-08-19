@@ -46,14 +46,10 @@ const Navbar = () => {
     {
       label: "Profile",
       path: `/profile/${userId}`,
-      loader: () =>
-        fetch(import.meta.env.VITE_BACKEND_URL + `/api/v1/users/${userId}`),
     },
     {
       label: "Edit Info",
-      path: `/edit-info/${userId}`,
-      loader: () =>
-        fetch(import.meta.env.VITE_BACKEND_URL + `/api/v1/users/${userId}`),
+      path: `/edit-info`,
     },
     {
       label: "Inbox",
