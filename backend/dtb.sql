@@ -13,6 +13,7 @@ CREATE TABLE be_users (
     role NVARCHAR2 (255),
     created_at DATE,
     is_active NUMBER (1) DEFAULT 1,
+    photo_url NVARCHAR2 (255) DEFAULT 'default.jpg',
     password_reset_token NVARCHAR2(255),
     password_reset_expiration_date DATE,
     password_change_at DATE,

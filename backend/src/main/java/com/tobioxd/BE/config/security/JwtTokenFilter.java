@@ -49,10 +49,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 return;
             }
             final String token = authHeader.substring(7);
-            final String phonenumber = jwtTokenUtil.extractPhoneNumber(token);
-            if (phonenumber != null
+            final String email = jwtTokenUtil.extractEmail(token);
+            if (email != null
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
-                User userDetails = (User) userDetailsService.loadUserByUsername(phonenumber);
+                User userDetails = (User) userDetailsService.loadUserByUsername(email);
                 if (jwtTokenUtil.validateToken(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -77,8 +77,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 Pair.of(String.format("%s/users/login", apiPrefix), "POST"),
                 Pair.of(String.format("%s/users/forgot-password", apiPrefix), "POST"),
                 Pair.of(String.format("%s/users/reset-password", apiPrefix), "PATCH"));
-                
-                
+
         for (Pair<String, String> bypassToken : bypassTokens) {
             if (request.getServletPath().contains(bypassToken.getFirst()) &&
                     request.getMethod().equals(bypassToken.getSecond())) {
@@ -86,17 +85,20 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             }
         }
 
-        final List<Pair<String,String>> bypassToken2 = Arrays.asList(
-                //Swagger
-                Pair.of("/api-docs","GET"),
-                Pair.of("/api-docs/**","GET"),
-                Pair.of("/swagger-resources","GET"),
-                Pair.of("/swagger-resources/**","GET"),
-                Pair.of("/configuration/ui","GET"),
-                Pair.of("/configuration/security","GET"),
-                Pair.of("/swagger-ui/**","GET"),
+        final List<Pair<String, String>> bypassToken2 = Arrays.asList(
+                // Swagger
+                Pair.of("/api-docs", "GET"),
+                Pair.of("/api-docs/**", "GET"),
+                Pair.of("/swagger-resources", "GET"),
+                Pair.of("/swagger-resources/**", "GET"),
+                Pair.of("/configuration/ui", "GET"),
+                Pair.of("/configuration/security", "GET"),
+                Pair.of("/swagger-ui/**", "GET"),
                 Pair.of("/swagger-ui.html", "GET"),
-                Pair.of("/swagger-ui/index.html", "GET"));   
+                Pair.of("/swagger-ui/index.html", "GET"),
+                Pair.of("/oauth2/**", "GET"),
+                Pair.of("/user/info","POST"));
+
         String requestPath = request.getServletPath();
         String requestMethod = request.getMethod();
 
@@ -108,7 +110,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 return true;
             }
         }
-        
+
         return false;
     }
 }

@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import backgroundImage from "../../assets/background/1.jpg";
+import backgroundImage from "../../../assets/background/1.jpg";
+import LoginGoogle from "./LoginGoogle";
+import LoginFacebook from "./LoginFacebook";
+import LoginGithub from "./LoginGithub";
 
 const LogIn = () => {
   const [emailError, setEmailError] = useState("");
@@ -47,7 +50,7 @@ const LogIn = () => {
           }
           throw new Error("Network response was not ok");
         }
-        return response.json()
+        return response.json();
       })
       .then((data) => {
         if (data.message === "User is blocked !") {
@@ -56,7 +59,6 @@ const LogIn = () => {
         } else {
           localStorage.setItem("user", JSON.stringify(data.user));
           localStorage.setItem("token", data.token);
-          localStorage.setItem("password", password);
           window.location.href = "/";
         }
       })
@@ -99,7 +101,7 @@ const LogIn = () => {
                   type="text"
                   name="email"
                   id="email"
-                  placeholder="Your email"
+                  placeholder="Your email/ Phone Number"
                   className="w-full px-3 py-2 placeholder-white-300 border border-white-300 rounded-md focus:outline-none focus:ring focus:ring-indigo-100 focus:border-indigo-300 dark:bg-white-700 dark:text-white dark:placeholder-white-500 dark:border-white-600 dark:focus:ring-white-900 dark:focus:border-white-500"
                 />
                 <label htmlFor="email" className="text-red-500">
@@ -140,17 +142,25 @@ const LogIn = () => {
                   Sign in
                 </button>
               </div>
-              <p className="text-sm text-center text-white-400">
-                Don&#x27;t have an account yet?{" "}
-                <a
-                  href="/sign-up"
-                  className="text-red-600 focus:outline-none focus:underline focus:text-indigo-500 dark:focus:border-indigo-800"
-                >
-                  Sign up
-                </a>
-                .
+              <p className="text-sm text-center text-white-400 ">
+                  Or
               </p>
             </form>
+          </div>
+          <div className="m-7">
+            <LoginGoogle />
+            <LoginFacebook />
+            <LoginGithub />
+            <p className="text-sm text-center text-white-400">
+              Don&#x27;t have an account yet?{" "}
+              <a
+                href="/sign-up"
+                className="text-red-600 focus:outline-none focus:underline focus:text-indigo-500 dark:focus:border-indigo-800"
+              >
+                Sign up
+              </a>
+              .
+            </p>
           </div>
         </div>
       </div>

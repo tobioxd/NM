@@ -29,6 +29,9 @@ public class UserResponse {
     @JsonProperty("role")
     private String role;
 
+    @JsonProperty("photo_url")
+    private String photoUrl;
+
     @JsonProperty("created_at")
     private Date createdAt;
 
@@ -45,6 +48,7 @@ public class UserResponse {
                 .email(user.getEmail())
                 .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
+                .photoUrl(user.getPhotoUrl())
                 .createdAt(user.getCreatedAt())
                 .passwordChangeAt(user.getPasswordChangeAt())
                 .active(user.isActive())

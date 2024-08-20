@@ -7,7 +7,7 @@ import { FaBarsStaggered, FaXmark } from "react-icons/fa6";
 
 const Navbar = () => {
   const user = localStorage.getItem("user");
-  const userId = JSON.parse(user)._id;
+  const userId = JSON.parse(user).id;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMenuUserOpen, setIsMenuUserOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
@@ -97,7 +97,7 @@ const Navbar = () => {
             <div className="flex items-center ml-auto">
               {/*userprofile*/}
               <img
-                src={`/images/default.jpg`}
+                src={JSON.parse(user).photo_url !== "default.jpg" ? JSON.parse(user).photo_url : '/images/default.jpg'}
                 alt={user.name}
                 className="w-10 h-10 rounded-full cursor-pointer "
                 onClick={toggleMenuUser}

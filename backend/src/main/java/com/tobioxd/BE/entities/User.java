@@ -30,13 +30,13 @@ public class User implements UserDetails {
     @GeneratedValue(generator = "db-uuid")
     private String id;
 
-    @Column(name = "phone_number", length = 255, nullable = false, unique = true)
+    @Column(name = "phone_number", length = 255, unique = true)
     private String phoneNumber;
 
-    @Column(name = "email", length = 255, nullable = false, unique = true)
+    @Column(name = "email", length = 255, unique = true)
     private String email;
 
-    @Column(name = "password", length = 255, nullable = false)
+    @Column(name = "password", length = 255)
     private String password;
 
     @Column(name = "name", length = 255, nullable = false)
@@ -44,6 +44,9 @@ public class User implements UserDetails {
 
     @Column(name = "role", length = 255, nullable = false)
     private String role;
+
+    @Column(name = "photo_url", length = 255)
+    private String photoUrl;
 
     @Column(name = "created_at")
     private Date createdAt;
@@ -69,7 +72,7 @@ public class User implements UserDetails {
     
     @Override
     public String getUsername() {
-        return phoneNumber;
+        return email;
     }
 
     @Override

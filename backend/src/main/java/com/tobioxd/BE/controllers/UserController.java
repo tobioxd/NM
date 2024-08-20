@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -107,7 +108,9 @@ public class UserController {
             BindingResult result) {
         try {
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.updateUserInfor(userDTO, token));
-        } catch (Exception e) {
+        }catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        }catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -186,5 +189,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resetPasswordResponse);
         }
     }
+
 
 }

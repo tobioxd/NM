@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -95,12 +96,19 @@ public class UserServiceImpl implements IUserService {
         if (userRepository.existsByEmail(userDTO.getEmail())) {
             throw new DataExistAlreadyException("Email exists already !");
         }
+
+        // Check if password is valid
+        if(!isPasswordValid(userDTO.getPassword())) {
+            throw new Exception("Password must contain at least 8 characters, 1 uppercase letter, 1 number and 1 special character !");
+        }
+
         // convert from userDTO => user
         User newUser = User.builder()
                 .phoneNumber(userDTO.getPhoneNumber())
                 .email(userDTO.getEmail())
                 .password(userDTO.getPassword())
                 .name(userDTO.getName())
+                .photoUrl("default.jpg")
                 .isActive(true)
                 .createdAt(new Date())
                 .role("user")
@@ -119,7 +127,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public LoginResponse loginUser(UserLoginDTO userLoginDTO) throws Exception {
         String input = userLoginDTO.getInput();
-        String password = userLoginDTO.getPassword();
+        String password = "userLoginDTO.getPassword()";
 
         String phoneNumber;
         String email;
@@ -161,11 +169,11 @@ public class UserServiceImpl implements IUserService {
 
         User existingUser = user.orElseThrow(() -> new DataNotFoundException("Invalid phonenumber/password !"));
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                existingUser.getPhoneNumber(),
+                existingUser.getEmail(),
                 password, existingUser.getAuthorities());
 
         authenticationManager.authenticate(authenticationToken);
-        String token = jwtTokenUtil.generateToken(existinguser);
+        String token = jwtTokenUtil.generateToken(existingUser);
 
         User userDetail = getUserDetailsFromToken(token);
         Token jwtToken = tokenServiceImpl.addToken(userDetail, token);
@@ -187,8 +195,8 @@ public class UserServiceImpl implements IUserService {
         if (jwtTokenUtil.isTokenExpired(token)) {
             throw new Exception("Token is expired");
         }
-        String phoneNumber = jwtTokenUtil.extractPhoneNumber(token);
-        Optional<User> user = userRepository.findByPhoneNumber(phoneNumber);
+        String email = jwtTokenUtil.extractEmail(token);
+        Optional<User> user = userRepository.findByEmail(email);
 
         if (user.isPresent()) {
 
@@ -232,6 +240,15 @@ public class UserServiceImpl implements IUserService {
         }
 
         String password = updatePasswordDTO.getNewPassword();
+
+        if(!isPasswordValid(password)) {
+            throw new Exception("Password must contain at least 8 characters, 1 uppercase letter, 1 number and 1 special character !");
+        }
+
+        if (passwordEncoder.matches(password, user.getPassword())) {
+            throw new Exception("New password must be different from the old password !");
+        }
+
         String encodedPassword = passwordEncoder.encode(password);
         user.setPassword(encodedPassword);
         user.setPasswordChangeAt(new Date());
@@ -494,6 +511,16 @@ public class UserServiceImpl implements IUserService {
         Date now = new Date();
         return now.after(passwordResetExpirationDate);
 
+    }
+
+    private boolean isPasswordValid(String password) {
+        // Regex to check valid password.
+        String regex = "^(?=.*[0-9])(?=.*[A-Z])(?=.*[@#$&*]).{8,}$";
+        Pattern p = Pattern.compile(regex);
+        if (password == null) {
+            return false;
+        }
+        return p.matcher(password).matches();
     }
 
 }

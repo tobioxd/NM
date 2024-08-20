@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import backgroundImage from "../../assets/background/2.jpg";
+import backgroundImage from "../../../assets/background/2.jpg";
 
 const Signup = () => {
   const [nameError, setNameError] = useState("");

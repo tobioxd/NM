@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import backgroundImage from "../../assets/background/4.jpg";
+import backgroundImage from "../../../assets/background/4.jpg";
 import { useParams } from "react-router-dom";
 
 const ResetPassword = () => {

@@ -2,7 +2,7 @@ server:
     port : 8080
   
 client:
-    port : 80
+    port : 5173
 
 spring:
   application:
@@ -22,8 +22,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ur email
-    password: ur password
+    username: minhnhat.kd.hungyen@gmail.com 
+    password: ayja lzxm grhl bzoh
     properties:
       mail:
         smtp:
@@ -33,6 +33,31 @@ spring:
           writetimeout: 5000
           starttls:
             enable: true
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            clientId: <Your clientId>
+            clientSecret: <Your clientSecret>
+            scope:
+              - user:email
+              - read:user
+          google:
+            clientId: <Your clientId>
+            clientSecret: <Your clientSecret>
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          facebook:
+            clientId: <Your clientId>
+            clientSecret: <Your clientSecret>
+            scope:
+              - email
+              - public_profile
+  main:
+    allow-bean-definition-overriding: true
 
 api:
     prefix: api/v1
@@ -57,4 +82,3 @@ logging:
     # org.springframework.security: debug
     # org.springframework.web: debug
     com.shopapp.components.ApiLoggingFilter: DEBUG
-  

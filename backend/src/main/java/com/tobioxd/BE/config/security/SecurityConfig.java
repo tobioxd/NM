@@ -23,9 +23,9 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return phoneNumber -> userReponsitory
-                .findByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new UsernameNotFoundException("Can not find user with phoneNumber = " + phoneNumber));
+        return email -> userReponsitory
+                .findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Can not find user with email = " + email));
     }
 
     @Bean

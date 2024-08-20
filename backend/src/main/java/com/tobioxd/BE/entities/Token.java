@@ -24,7 +24,7 @@ public class Token {
     @GeneratedValue(generator = "db-uuid")
     private String id;
 
-    @Column(name = "token", length = 255)
+    @Column(name = "token", length = 255, unique = true)
     private String token;
 
     @Column(name = "refresh_token", length = 255)

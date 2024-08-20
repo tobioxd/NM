@@ -23,6 +23,8 @@ public interface UserRepository extends JpaRepository<User,String>{
 
     Optional<User> findByPasswordResetToken(String token);
 
+    Optional<User> findByName(String name);
+
     boolean existsByPasswordResetToken(String passwordResetToken);
 
     @Query("SELECT o FROM User o WHERE (:keyword IS NULL OR :keyword = '' OR "+

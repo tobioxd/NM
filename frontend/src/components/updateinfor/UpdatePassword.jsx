@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Label, TextInput } from "flowbite-react";
 
 const UpdatePassword = () => {
-  const curpassword = localStorage.getItem("password");
   const [passwordError, setPasswordError] = useState("");
   const [newpasswordError, setNewpasswordError] = useState("");
   const [newpasswordconfirmedError, setNewpasswordconfirmedError] =
@@ -11,24 +10,8 @@ const UpdatePassword = () => {
   const handleUpdatePassword = (e) => {
     e.preventDefault();
 
-    if (e.target.password.value !== curpassword) {
-      setPasswordError("Your password is incorrect");
-      return;
-    } else {
-      setPasswordError("");
-    }
-
     if (e.target.newpassword.value.length < 8) {
       setNewpasswordError("Password must be at least 8 characters long");
-      return;
-    } else {
-      setNewpasswordError("");
-    }
-
-    if (e.target.newpassword.value === curpassword) {
-      setNewpasswordError(
-        "New password must be different from the current password"
-      );
       return;
     } else {
       setNewpasswordError("");
@@ -60,19 +43,20 @@ const UpdatePassword = () => {
         },
         body: JSON.stringify(userData),
       })
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-              return response.json();
-        })
+        .then((response) => {return response.json();})
         .then((data) => {
-          console.log(data);
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          localStorage.removeItem("password");
-          alert("Password updated successfully, please login again");
-          window.location.href = "/login";
+          if (data.user === null) {
+            if(data.message === "Old Password is incorrect !"){
+              setPasswordError(data.message);
+            }
+            else setNewpasswordError(data.message);
+          } else {
+            console.log(data);
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            alert("Password updated successfully, please login again");
+            window.location.href = "/login";
+          }
         })
         .catch((error) => {
           console.error("Error:", error);

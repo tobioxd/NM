@@ -1,6 +1,6 @@
 import React,{useState} from "react";
-import backgroundImage from "../../assets/background/3.jpg";
-import profilepic from "../../assets/profilepic/hero.jpg";
+import backgroundImage from "../../../assets/background/3.jpg";
+import profilepic from "../../../assets/profilepic/hero.jpg";
 
 const ForgotPassword = () => {
   const [input, setEmail] = useState("");

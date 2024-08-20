@@ -1,12 +1,13 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
 import Home from "../screen/Home";
-import SignUp from "../components/home/Signup";
-import LogIn from "../components/home/LogIn";
-import LogOut from "../components/home/LogOut";
-import ForgotPassword from "../components/home/ForgotPassword";
-import ResetPassword from "../components/home/ResetPassword";
+import SignUp from "../components/home/authentication/Signup";
+import LogIn from "../components/home/authentication/LogIn";
+import LogOut from "../components/home/authentication/LogOut";
+import ForgotPassword from "../components/home/authentication/ForgotPassword";
+import ResetPassword from "../components/home/authentication/ResetPassword";
 import EditInfo from "../components/updateinfor/EditInfo";
+import Success from "../components/home/authentication/Success";
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
       {
         path: "edit-info",
         element: <EditInfo />,
+      },
+      {
+        path: "success",
+        element: <Success />,
       },
     ],
   },
