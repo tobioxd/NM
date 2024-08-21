@@ -76,32 +76,11 @@ public class CustomOAuth2UserDetailService extends DefaultOAuth2UserService {
     }
 
     public User updateExistingUser(User existingUser, OAuth2UserDetails oAuth2UserDetails) {
-        existingUser.setPhotoUrl(oAuth2UserDetails.getPhotoUrl());
+        if(existingUser.getPhotoUrl().equals("default.jpg")){
+            existingUser.setPhotoUrl(oAuth2UserDetails.getPhotoUrl());
+        }
 
         return userRepository.save(existingUser);
     }
-
-    // private OAuth2UserRequest getUserInfo(HttpServletRequest request) {
-        
-    //     // Get the OAuth2AuthenticationToken
-    //     OAuth2AuthenticationToken authentication = (OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
-
-    //     // Get the OAuth2AuthorizedClient
-    //     OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(
-    //             authentication.getAuthorizedClientRegistrationId(),
-    //             authentication.getName()
-    //     );
-
-    //     // Get the atributes
-    //     OAuth2User oAuth2User = authentication.getPrincipal();
-
-    //     // Construct the OAuth2UserRequest
-    //     ClientRegistration clientRegistration = authorizedClient.getClientRegistration();
-    //     OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
-    //     OAuth2UserRequest oAuth2UserRequest = new OAuth2UserRequest(clientRegistration, accessToken, oAuth2User.getAttributes());
-
-    //     return oAuth2UserRequest;
-
-    // }
 
 }

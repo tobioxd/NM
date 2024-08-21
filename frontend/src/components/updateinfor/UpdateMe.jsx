@@ -17,8 +17,6 @@ const UpdateMe = () => {
 
   const { name, email } = curuser;
 
-  console.log(name, email);
-
   const handleUpdateMe = (e) => {
     if (window.confirm("Are you sure you want to update your info?") === true) {
       e.preventDefault();
