@@ -127,7 +127,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public LoginResponse loginUser(UserLoginDTO userLoginDTO) throws Exception {
         String input = userLoginDTO.getInput();
-        String password = "userLoginDTO.getPassword()";
+        String password = userLoginDTO.getPassword();
 
         String phoneNumber;
         String email;
@@ -266,7 +266,15 @@ public class UserServiceImpl implements IUserService {
             user.setName(updateUserInfoDTO.getName());
         }
         if (updateUserInfoDTO.getEmail() != null) {
-            user.setEmail(updateUserInfoDTO.getEmail());
+            if(updateUserInfoDTO.getEmail().matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
+                if(userRepository.existsByEmail(updateUserInfoDTO.getEmail())) {
+                    throw new DataExistAlreadyException("Email exists already !");
+                }else{
+                    user.setEmail(updateUserInfoDTO.getEmail());
+                }
+            } else {
+                throw new Exception("Invalid email format. Please provide a valid email.");
+            }
         }
 
         return UserResponse.fromUser(userRepository.save(user));
@@ -474,6 +482,10 @@ public class UserServiceImpl implements IUserService {
             throw new Exception(errorMessages.toString());
         }
 
+        if(!isPasswordValid(resetPasswordDTO.getNewPassword())) {
+            throw new Exception("Password must contain at least 8 characters, 1 uppercase letter, 1 number and 1 special character !");
+        }
+
         Optional<User> user = userRepository.findByPasswordResetToken(token);
 
         if (user.isEmpty()) {
@@ -492,7 +504,6 @@ public class UserServiceImpl implements IUserService {
         existingUser.setPasswordResetToken(null);
         existingUser.setPasswordResetExpirationDate(null);
         userRepository.save(existingUser);
-
         updatePasswordResponse.setMessage("Update password successfully, please log in again !");
 
         return updatePasswordResponse;

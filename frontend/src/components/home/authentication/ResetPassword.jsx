@@ -38,16 +38,13 @@ const ResetPassword = () => {
     })
       .then((response) =>  response.json())
       .then((data) => {
-        if (data.status === "success") {
+        if (data.message === "Update password successfully, please log in again !") {
           alert("Password reset successfully");
           window.location.href = "/login";
         } else {
           alert(data.message);
-          
         }
       });
-
-    
   };
 
   return (

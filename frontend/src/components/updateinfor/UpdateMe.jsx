@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Label, TextInput } from "flowbite-react";
 
 const UpdateMe = () => {
   const curuser = JSON.parse(localStorage.getItem("user"));
+  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     // Fetch user data using the id
@@ -34,10 +35,20 @@ const UpdateMe = () => {
         },
         body: JSON.stringify(userData),
       })
-        .then((response) => response.json())
+        .then((response) => {
+          if (response.status === 409) {
+            setEmailError("Email already exists !");
+          }
+          return response.json();
+        })
         .then((data) => {
           console.log(data);
-          window.location.reload();
+          alert(
+            "Your info has been updated successfully, please log in again !"
+          );
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
         })
         .catch((error) => {
           console.error("Error:", error);
@@ -82,6 +93,9 @@ const UpdateMe = () => {
                 type="email"
                 defaultValue={email}
               />
+              <label htmlFor="email" className="text-red-500">
+                {emailError}
+              </label>
             </div>
           </div>
           <button

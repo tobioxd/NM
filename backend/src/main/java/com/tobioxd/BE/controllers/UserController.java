@@ -108,7 +108,9 @@ public class UserController {
             BindingResult result) {
         try {
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(UserServiceImpl.updateUserInfor(userDTO, token));
-        }catch (BadCredentialsException e) {
+        }catch (DataExistAlreadyException e){
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
