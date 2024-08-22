@@ -8,6 +8,7 @@ import ForgotPassword from "../components/home/authentication/ForgotPassword";
 import ResetPassword from "../components/home/authentication/ResetPassword";
 import EditInfo from "../components/updateinfor/EditInfo";
 import Success from "../components/home/authentication/Success";
+import DashboardLayout from "../components/dashboard/DashboardLayout";
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
         path: "success",
         element: <Success />,
       },
+      {
+        path: "admin-dashboard",
+        element: <DashboardLayout />,
+      }
     ],
   },
 ]);
