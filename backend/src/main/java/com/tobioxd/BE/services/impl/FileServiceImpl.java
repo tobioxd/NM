@@ -33,49 +33,49 @@ public class FileServiceImpl implements IFileService {
     private final UserRepository userRepository;
 
     @Override
-public UserResponse uploadFile(MultipartFile file, String token) throws Exception {
-    String extractedToken = token.substring(7); // Clear "Bearer" from token
-    User user = userServiceImpl.getUserDetailsFromToken(extractedToken);
+    public UserResponse uploadFile(MultipartFile file, String token) throws Exception {
+        String extractedToken = token.substring(7); // Clear "Bearer" from token
+        User user = userServiceImpl.getUserDetailsFromToken(extractedToken);
 
-    String oldPhotoUrl = !user.getPhotoUrl().equals("default.jpg") ? user.getPhotoUrl() : null;
+        String oldPhotoUrl = !user.getPhotoUrl().equals("default.jpg") ? user.getPhotoUrl() : null;
 
-    if (!isImageFile(file) || file.getOriginalFilename() == null) {
-        throw new Exception("Invalid image format");
+        if (!isImageFile(file) || file.getOriginalFilename() == null) {
+            throw new Exception("Invalid image format");
+        }
+
+        String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+
+        // Add UUID to front to make sure it is unique
+        String uniqueFilename = UUID.randomUUID().toString() + "_" + filename;
+
+        // Convert MultipartFile to File
+        File convertedFile = convertMultipartFileToFile(file);
+
+        s3Client.putObject(PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(uniqueFilename)
+                .build(),
+                RequestBody.fromFile(convertedFile));
+
+        // Clean up the temporary file
+        convertedFile.delete();
+
+        String photoUrl = "https://tobioxd.s3.ap-southeast-1.amazonaws.com/" + uniqueFilename;
+
+        if (oldPhotoUrl != null) {
+            deleteFile(oldPhotoUrl.substring(oldPhotoUrl.lastIndexOf("/") + 1));
+        }
+        user.setPhotoUrl(photoUrl);
+        userRepository.save(user);
+
+        return UserResponse.fromUser(user);
     }
 
-    String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-
-    // Add UUID to front to make sure it is unique
-    String uniqueFilename = UUID.randomUUID().toString() + "_" + filename;
-
-    // Convert MultipartFile to File
-    File convertedFile = convertMultipartFileToFile(file);
-
-    s3Client.putObject(PutObjectRequest.builder()
-            .bucket(bucketName)
-            .key(uniqueFilename)
-            .build(),
-            RequestBody.fromFile(convertedFile));
-
-    // Clean up the temporary file
-    convertedFile.delete();
-
-    String photoUrl = "https://tobioxd.s3.ap-southeast-1.amazonaws.com/" + uniqueFilename;
-
-    if (oldPhotoUrl != null) {
-        deleteFile(oldPhotoUrl.substring(oldPhotoUrl.lastIndexOf("/") + 1));
-    }
-    user.setPhotoUrl(photoUrl);
-    userRepository.save(user);
-
-    return UserResponse.fromUser(user);
-}
-
-    private void deleteFile(String file){
+    private void deleteFile(String file) {
         s3Client.deleteObject(DeleteObjectRequest.builder()
-        .bucket(bucketName)
-        .key(file)
-        .build());
+                .bucket(bucketName)
+                .key(file)
+                .build());
     }
 
     private boolean isImageFile(MultipartFile file) {
@@ -88,6 +88,5 @@ public UserResponse uploadFile(MultipartFile file, String token) throws Exceptio
         file.transferTo(convFile);
         return convFile;
     }
-
 
 }

@@ -39,7 +39,7 @@ INSERT INTO be_users(id,phone_number, email, password, name, role) VALUES ('F0C8
 
 CREATE TABLE be_tokens (
     id NVARCHAR2 (255) NOT NULL PRIMARY KEY,
-    token VARCHAR2 (255) UNIQUE NOT NULL,
+    token VARCHAR2 (500) UNIQUE NOT NULL,
     token_type VARCHAR2 (255) NOT NULL,
     expiration_date DATE,
     revoked NUMBER (1) NOT NULL,
