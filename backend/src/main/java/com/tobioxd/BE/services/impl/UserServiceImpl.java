@@ -265,9 +265,9 @@ public class UserServiceImpl implements IUserService {
         if (updateUserInfoDTO.getName() != null) {
             user.setName(updateUserInfoDTO.getName());
         }
-        if (updateUserInfoDTO.getEmail() != null) {
+        if (updateUserInfoDTO.getEmail() != null ) {
             if(updateUserInfoDTO.getEmail().matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")) {
-                if(userRepository.existsByEmail(updateUserInfoDTO.getEmail())) {
+                if(userRepository.existsByEmail(updateUserInfoDTO.getEmail())&& !user.getEmail().equals(updateUserInfoDTO.getEmail())){ 
                     throw new DataExistAlreadyException("Email exists already !");
                 }else{
                     user.setEmail(updateUserInfoDTO.getEmail());

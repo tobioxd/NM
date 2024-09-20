@@ -43,19 +43,25 @@ const UpdatePassword = () => {
         },
         body: JSON.stringify(userData),
       })
-        .then((response) => {return response.json();})
+        .then((response) => {
+          return response.json();
+        })
         .then((data) => {
-          if (data.user === null) {
-            if(data.message === "Old Password is incorrect !"){
-              setPasswordError(data.message);
-            }
-            else setNewpasswordError(data.message);
+          if (data.message === "Old Password is incorrect !") {
+            setPasswordError(data.message);
           } else {
-            console.log(data);
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            alert("Password updated successfully, please login again");
-            window.location.href = "/login";
+            if (
+              data.message ===
+              "Password must contain at least 8 characters, 1 uppercase letter, 1 number and 1 special character !"
+            ) {
+              setNewpasswordError(data.message);
+            } else {
+              console.log(data);
+              localStorage.removeItem("token");
+              localStorage.removeItem("user");
+              alert("Password updated successfully, please login again");
+              window.location.href = "/login";
+            }
           }
         })
         .catch((error) => {

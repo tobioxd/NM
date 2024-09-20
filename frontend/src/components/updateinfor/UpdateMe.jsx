@@ -35,20 +35,19 @@ const UpdateMe = () => {
         },
         body: JSON.stringify(userData),
       })
-        .then((response) => {
-          if (response.status === 409) {
-            setEmailError("Email already exists !");
-          }
-          return response.json();
-        })
+        .then((response) => response.json())
         .then((data) => {
-          console.log(data);
-          alert(
-            "Your info has been updated successfully, please log in again !"
-          );
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location.href = "/login";
+          if (data.message === "Email exists already !") {
+            setEmailError(data.message);
+          } else {
+            console.log(data);
+            alert(
+              "Your info has been updated successfully, please log in again !"
+            );
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            window.location.href = "/login";
+          }
         })
         .catch((error) => {
           console.error("Error:", error);
